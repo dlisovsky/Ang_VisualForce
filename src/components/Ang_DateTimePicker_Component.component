@@ -1,0 +1,132 @@
+<apex:component id="Ang_DateTimePicker_Component">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/css/bootstrap-datetimepicker.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.21.0/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.37/js/bootstrap-datetimepicker.min.js"></script>
+
+    <style>
+        .date-time-picker {
+            cursor: pointer;
+        }
+    </style>
+
+    <ang-script style="display: none;" type="text/ng-template" id="A_DateTimePickerTemplate">
+        <div class="input-group date">
+            <input id="{{$ctrl.id}}" name="{{$ctrl.name}}" ng-model="$ctrl.model" class="form-control date-time-picker {{$ctrl.additionalClasses}}" type="text" placeholder="{{$ctrl.placeholder}}"/>
+            <span class="input-group-addon">
+                <span class="glyphicon glyphicon-{{$ctrl.icon || 'calendar'}}"></span>
+            </span>
+        </div>
+    </ang-script>
+
+    <script>
+        (function(app){
+
+            var templateHTML = document.getElementById('A_DateTimePickerTemplate').innerHTML;
+
+            var controller = function($rootScope, $scope, $element, $timeout) {
+
+                var ctrl = this
+
+                var initDateInput = function(){
+
+                    var DEFAULT_DATE_FORMAT = ctrl.format || 'D/MM/YYYY';
+
+                    $timeout(function(){
+
+                        var $dateInput = $('input', $element);
+
+                        var isInit;
+
+                        var datepickerOptions = {
+                            format: DEFAULT_DATE_FORMAT,
+                            useCurrent: ctrl.useCurrent || false,
+                            showTodayButton: ctrl.showTodayButton || true,
+                            keepInvalid: true
+                        };
+
+                        if (ctrl.stepping) {
+                            datepickerOptions.stepping = ctrl.stepping;
+                        }
+
+                        if (ctrl.minDate) {
+                            datepickerOptions.minDate = moment(ctrl.minDate, 'YYYY-MM-DD');
+                        }
+
+                        if (ctrl.maxDate) {
+                            datepickerOptions.maxDate = moment(ctrl.maxDate, 'YYYY-MM-DD');
+                        }
+
+                        if (ctrl.sideBySide) {
+                            datepickerOptions.sideBySide = ctrl.sideBySide;
+                        }
+
+                        if (ctrl.viewMode) {
+                            datepickerOptions.viewMode = ctrl.viewMode;
+                        }
+
+                        if (ctrl.model){
+                            isInit = true;
+                            datepickerOptions.defaultDate = moment(ctrl.model, DEFAULT_DATE_FORMAT);
+                        }
+
+                        $dateInput.datetimepicker(datepickerOptions).on('dp.change', function(e){
+                            var selectedDate = e.date;
+                            if (!selectedDate._isAMomentObject || !selectedDate.isValid){
+                                return;
+                            }
+                            $timeout(function(){
+                                ctrl.model = selectedDate.format(DEFAULT_DATE_FORMAT);
+                            }, 10);
+
+                            if(isInit){
+                                isInit = false;
+                                return; // don't trigger change event on init.
+                            }
+
+                            $rootScope.$broadcast('dateTimePicker-change', {
+                                id: ctrl.id,
+                                currentValue: ctrl.model
+                            });
+                        });
+
+                    }, 10);
+
+                };
+
+                ctrl.$onInit = function() {
+                    initDateInput();
+                    console.log('INIT: DateTimePicker')
+                }
+            }
+
+            if (app) {
+                app.component(
+                        'dateTimePicker', {
+                            template: templateHTML,
+                            controller: controller,
+                            bindings: {
+                                model : '=',
+                                placeholder : '<',
+                                additionalClasses : '<',
+                                id : '<',
+                                name : '<',
+                                format : '<',
+                                stepping : '<',
+                                minDate : '<',
+                                maxDate : '<',
+                                sideBySide : '<',
+                                showTodayButton : '<',
+                                useCurrent : '<',
+                                viewMode : '<',
+                                icon : '<'
+                            }
+                        }
+                )
+            }
+
+        })(window.app)
+
+    </script>
+</apex:component>

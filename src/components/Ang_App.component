@@ -1,0 +1,75 @@
+<apex:component id="Ang_App">
+
+    <apex:attribute name="mainComponent" description="Main Angular Component" type="String" required="true"/>
+
+    <div ng-app="app" ng-controller="mainCtrl" class="ng-cloak">
+        <apex:outputText value="{!mainComponent}" escape="false"/>
+        <spinner></spinner>
+    </div>
+
+    <!-- APP Scripts -->
+    <c:Ang_AngularJs />
+
+    <script type="text/javascript">
+
+        window.ngPayload = window.ngPayload || {}
+
+        window.app = angular.module('app', [])
+                .run(function ($rootScope, jobCounter) {
+                    console.log('ang-run');
+
+                    $rootScope.ngPayload = window.ngPayload;
+                    console.log('$rootScope.ngPayload', $rootScope.ngPayload);
+
+                    $rootScope.metadata = window.ngPayload.metadata;
+                    console.log('$rootScope.metadata', $rootScope.metadata);
+
+                    $rootScope.$on('jobCounter', function (event, payload) {
+                        $rootScope.$broadcast('spinner', payload.hasJobs)
+                    })
+
+                    $rootScope.$on('remoteStart', function(event, payload) {
+                        if (!payload.options.skipSpinner) {
+                            jobCounter.enqueue(payload)
+                        }
+                    });
+                    $rootScope.$on('remoteFinish', function(event, payload) {
+                        if (!payload.options.skipSpinner) {
+                            jobCounter.dequeue(payload)
+                        }
+                    });
+                    $rootScope.$on('remoteError', function(action, data, event) {
+                        toastr["error"]("Error: " + data.error.message)
+//                        console.error('REMOTE ERROR', data, data.error.message)
+                    });
+
+
+                    window.addEventListener("beforeunload", function (e) {
+                        var confirmationMessage = "\o/";
+
+                        if(jobCounter.hasJobs() && $rootScope.hardReload != true){
+                            (e || window.event).returnValue = confirmationMessage; //Gecko + IE
+                            return confirmationMessage;                            //Webkit, Safari, Chrome
+                        }
+                    });
+
+
+                })
+                .config(function (remoteApiProvider) {
+                    console.log('ang-config');
+                    remoteApiProvider.setApexControllerName(window.ngPayload.apexControllerName)
+                })
+                .controller('mainCtrl', function ($rootScope, jobCounter, remoteApi) {
+                    console.log('ang-ctrl');
+                    console.log('remoteApi', remoteApi)
+                })
+
+    </script>
+
+    <c:Ang_AllowHTML_Filter />
+    <c:Ang_JsRemoting_Provider />
+    <c:Ang_JobCounter_Factory />
+    <c:Ang_Spinner_Component />
+    <c:Ang_Toastr_Factory />
+    
+</apex:component>
